@@ -122,6 +122,14 @@ import_wrapper = textwrap.TextWrapper(
 )
 
 
+def is_in_multiline_import(line, in_multiline_import):
+    if not in_multiline_import:
+        res = re.match(r"from.* \([^)]*", line)
+        return res
+    if in_multiline_import:
+        return not line.strip().endswith(")")
+
+
 def is_block_comment(line):
     """Entering/exiting a block comment"""
     line = line.strip()
@@ -237,6 +245,7 @@ class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
 
         insert_at = None
         in_block = False  # Whether we're in a block comment
+        in_multiline_import = False
         file_top = True  # Whether we're on the first statement in the file
         for region in self.view.lines(all_region):
             line = self.view.substr(region)
@@ -254,13 +263,19 @@ class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
             if is_block_comment(line):
                 in_block = not in_block
 
+            in_multiline_import = is_in_multiline_import(
+                line, in_multiline_import
+            )
+
             # We care if we're looking at the very first statement in the file
             # (always add import below it)
             if not in_block and not line.startswith('#'):
                 file_top = False
 
             # Look for an existing component import statement that we can add to
-            if style == ImportStyle.COMPONENT:
+            if (not in_multiline_import) and style == ImportStyle.COMPONENT:
+                if ")" in line:
+                    continue
                 if line.strip().startswith("from " + import_base + " import"):
                     existing_import = line
 
@@ -343,7 +358,8 @@ class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
                     if IMPORT_CHECK_VALID_RE.match(line) or file_top:
                         insert_at = region
                 continue
-
+            if in_multiline_import:
+                continue
             # Found line of "real" code
             break
 
