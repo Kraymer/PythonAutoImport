@@ -15,6 +15,9 @@ Multiple choices are shown via the same menu as Goto Definition
 
 Attempts to append to existing import statements if found
 
+![ezgif-3-370031c572](https://user-images.githubusercontent.com/84227/222835908-73b017f4-b962-4e9d-9a2c-d91dd58daf38.gif)
+
+
 ## Installation
 (You may need to restart Sublime Text 3 for the plugin to load)
 
