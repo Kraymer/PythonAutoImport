@@ -1,3 +1,6 @@
+> :fork_and_knife: **WTF? (WHY THE FORK)**  
+> - detect correctly multiline imports when adding import statement
+
 PythonAutoImport
 ================
 
