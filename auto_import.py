@@ -3,13 +3,16 @@ import os
 import re
 import textwrap
 
+
 class ImportStyle(object):
     COMPONENT = 'component'
     ABSOLUTE = 'absolute'
     RELATIVE = 'relative'
 
 
-def build_import_statement(symbol, path, root_path=None, style=ImportStyle.COMPONENT):
+def build_import_statement(
+    symbol, path, root_path=None, style=ImportStyle.COMPONENT
+):
     """
     Builds an import statement from a symbol and a path
 
@@ -46,18 +49,20 @@ def build_import_statement(symbol, path, root_path=None, style=ImportStyle.COMPO
     """
     if root_path is None:
         root_path = '/'
-    root_path = root_path.replace('.', '/')  # Support providing root_path as 'x.y.z'
+    root_path = root_path.replace(
+        '.', '/'
+    )  # Support providing root_path as 'x.y.z'
     if not root_path.startswith('/'):
         root_path = '/' + root_path
     if not path.startswith('/'):
         path = '/' + path
 
     if path.startswith(root_path):
-        path = path[len(root_path):]
+        path = path[len(root_path) :]
     if path.endswith('.py'):
-        path = path[:-len('.py')]
+        path = path[: -len('.py')]
     if path.endswith('__init__'):
-        path = path[:-len('__init__')]
+        path = path[: -len('__init__')]
 
     import_path = path.replace('/', '.').strip('.')
 
@@ -80,7 +85,8 @@ UNIX_DRIVE_LETTER_RE = re.compile(r'^/([A-Z])/')
 
 # Import on the first line that doesn't match this
 # This is a guess as to where imports stop and code starts
-IMPORT_CHECK_SKIP_RE = re.compile(r"""
+IMPORT_CHECK_SKIP_RE = re.compile(
+    r"""
     ^
     \s |        # Whitespace
     [#'"] |     # comments
@@ -90,15 +96,20 @@ IMPORT_CHECK_SKIP_RE = re.compile(r"""
     try |       # try / except Import Error
     except |
     $
-""", re.X)
+""",
+    re.X,
+)
 
 # These are valid lines to insert an import after
-IMPORT_CHECK_VALID_RE = re.compile(r"""
+IMPORT_CHECK_VALID_RE = re.compile(
+    r"""
     ^
     __ |        # __author__ etc
     import |    # import statements
     from
-""", re.X)
+""",
+    re.X,
+)
 
 
 # True if the line starts with a space or tab
@@ -106,19 +117,20 @@ INDENT_RE = re.compile(r"^[ \t]")
 
 import_wrapper = textwrap.TextWrapper(
     width=76,
-    subsequent_indent=' '*4,
+    subsequent_indent=' ' * 4,
     break_long_words=False,
 )
 
 
 def is_block_comment(line):
-    """ Entering/exiting a block comment """
+    """Entering/exiting a block comment"""
     line = line.strip()
     if line == '"""' or (line.startswith('"""') and not line.endswith('"""')):
         return True
     if line == "'''" or (line.startswith("'''") and not line.endswith("'''")):
         return True
     return False
+
 
 def split_import_components(import_statement):
     """
@@ -131,23 +143,17 @@ def split_import_components(import_statement):
         ('x.y', ['a', 'b', 'c'])
     """
     left, right = import_statement.split('import')
-    right = right \
-        .replace('(', '') \
-        .replace(')', '') \
-        .replace('\\', '')
+    right = right.replace('(', '').replace(')', '').replace('\\', '')
 
     base = left.replace('from', '').strip()
 
     components = [
-        component.strip()
-        for component
-        in right.split(',')
-        if component
+        component.strip() for component in right.split(',') if component
     ]
     return base, components
 
-class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
 
+class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
     @property
     def settings(self):
         return sublime.load_settings("PythonAutoImport.sublime-settings")
@@ -205,11 +211,17 @@ class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
 
         # Make sure they're not trying to import from the same file
         if self.paths_equal(full_path, file_path):
-            return sublime.status_message('AutoPythonImport:  The symbol you are trying to import is defined in this file')
+            return sublime.status_message(
+                'AutoPythonImport:  The symbol you are trying to import is defined in this file'
+            )
 
-        import_statement = build_import_statement(symbol, relative_path, root_path=self.root_path, style=style)
+        import_statement = build_import_statement(
+            symbol, relative_path, root_path=self.root_path, style=style
+        )
         if not import_statement:
-            return sublime.status_message('AutoPythonImport:  There was a problem constructing the import statement')
+            return sublime.status_message(
+                'AutoPythonImport:  There was a problem constructing the import statement'
+            )
 
         import_base, _ = split_import_components(import_statement)
 
@@ -225,12 +237,14 @@ class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
 
         insert_at = None
         in_block = False  # Whether we're in a block comment
-        file_top = True   # Whether we're on the first statement in the file
+        file_top = True  # Whether we're on the first statement in the file
         for region in self.view.lines(all_region):
             line = self.view.substr(region)
 
             if line.strip() == import_statement:
-                return sublime.status_message('AutoPythonImport:  This import statement already exists')
+                return sublime.status_message(
+                    'AutoPythonImport:  This import statement already exists'
+                )
 
             # Default to top of file
             if not insert_at:
@@ -252,43 +266,74 @@ class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
 
                     # Check if this is a line-continuation import
                     existing_import_line_region = region.end() + 1
-                    existing_import_region = sublime.Region(existing_import_line_region, self.view.size())
-                    existing_import_lines = self.view.lines(existing_import_region)
+                    existing_import_region = sublime.Region(
+                        existing_import_line_region, self.view.size()
+                    )
+                    existing_import_lines = self.view.lines(
+                        existing_import_region
+                    )
                     for existing_import_line_region in existing_import_lines:
-                        existing_import_line = self.view.substr(existing_import_line_region)
+                        existing_import_line = self.view.substr(
+                            existing_import_line_region
+                        )
                         if not INDENT_RE.match(existing_import_line):
                             break
                         existing_import += existing_import_line
 
-                    existing_import_base, existing_import_components = \
-                        split_import_components(existing_import)
+                    (
+                        existing_import_base,
+                        existing_import_components,
+                    ) = split_import_components(existing_import)
 
                     if symbol in existing_import_components:
-                        return sublime.status_message('AutoPythonImport:  This import statement already exists')
+                        return sublime.status_message(
+                            'AutoPythonImport:  This import statement already exists'
+                        )
 
-                    new_import_statement = "from {base} import {components}".format(
-                        base=existing_import_base,
-                        components=', '.join(existing_import_components + [symbol]),
+                    new_import_statement = (
+                        "from {base} import {components}".format(
+                            base=existing_import_base,
+                            components=', '.join(
+                                existing_import_components + [symbol]
+                            ),
+                        )
                     )
 
-                    wrapped_import_statement = import_wrapper.wrap(new_import_statement)
-                    final_import_statement = '\n'.join(wrapped_import_statement)
+                    wrapped_import_statement = import_wrapper.wrap(
+                        new_import_statement
+                    )
+                    final_import_statement = '\n'.join(
+                        wrapped_import_statement
+                    )
 
                     # Add parentheses \ slashes if we had to wrap the import statement
                     if len(wrapped_import_statement) > 1:
                         if '\\' in existing_import:
-                            final_import_statement = final_import_statement.replace('\n', ' \\\n')
+                            final_import_statement = (
+                                final_import_statement.replace('\n', ' \\\n')
+                            )
                         else:
-                            final_import_statement = final_import_statement.replace('import ', 'import (') + ')'
+                            final_import_statement = (
+                                final_import_statement.replace(
+                                    'import ', 'import ('
+                                )
+                                + ')'
+                            )
 
-                    replace_import_region = sublime.Region(region.begin(), existing_import_line_region.begin() - 1)
+                    replace_import_region = sublime.Region(
+                        region.begin(), existing_import_line_region.begin() - 1
+                    )
                     if self.scroll_to_import:
                         self.view.show(replace_import_region)
                         self.view.sel().clear()
                         self.view.sel().add(replace_import_region.end())
 
-                    self.view.replace(edit, replace_import_region, final_import_statement)
-                    return sublime.status_message('AutoPythonImport:  Appended {}'.format(symbol))
+                    self.view.replace(
+                        edit, replace_import_region, final_import_statement
+                    )
+                    return sublime.status_message(
+                        'AutoPythonImport:  Appended {}'.format(symbol)
+                    )
 
             if in_block or IMPORT_CHECK_SKIP_RE.match(line):
                 if not in_block:
@@ -306,15 +351,21 @@ class InsertPythonAutoImportCommand(sublime_plugin.TextCommand):
             self.view.show(insert_at.begin())
             self.view.sel().clear()
             self.view.sel().add(insert_at.end())
-        self.view.replace(edit, insert_at, self.view.substr(insert_at) + '\n' + import_statement)
+        self.view.replace(
+            edit,
+            insert_at,
+            self.view.substr(insert_at) + '\n' + import_statement,
+        )
 
-        return sublime.status_message('AutoPythonImport:  Added {}'.format(import_statement))
+        return sublime.status_message(
+            'AutoPythonImport:  Added {}'.format(import_statement)
+        )
 
     def run(self, edit, entry, symbol, style):
         self.insert_import(edit, entry, symbol, style)
 
-class PythonAutoImportCommand(sublime_plugin.TextCommand):
 
+class PythonAutoImportCommand(sublime_plugin.TextCommand):
     def select_entry(self, locations, idx, symbol, style):
         if idx >= 0:
             self.view.run_command(
@@ -323,7 +374,7 @@ class PythonAutoImportCommand(sublime_plugin.TextCommand):
                     "entry": locations[idx],
                     "symbol": symbol,
                     "style": style,
-                }
+                },
             )
         self.view.window().focus_view(self.view)
 
@@ -331,8 +382,10 @@ class PythonAutoImportCommand(sublime_plugin.TextCommand):
         fname, display_fname, rowcol = locations[idx]
         row, col = rowcol
 
-        self.view.window().open_file(fname + ":" + str(row) + ":" + str(col),
-            sublime.TRANSIENT | sublime.ENCODED_POSITION)
+        self.view.window().open_file(
+            fname + ":" + str(row) + ":" + str(col),
+            sublime.TRANSIENT | sublime.ENCODED_POSITION,
+        )
 
     def format_location(self, l):
         fname, display_fname, rowcol = l
@@ -342,7 +395,9 @@ class PythonAutoImportCommand(sublime_plugin.TextCommand):
 
     def lookup_symbol(self, symbol):
         index_locations = self.view.window().lookup_symbol_in_index(symbol)
-        open_file_locations = self.view.window().lookup_symbol_in_open_files(symbol)
+        open_file_locations = self.view.window().lookup_symbol_in_open_files(
+            symbol
+        )
         open_file_paths = set([l[0] for l in open_file_locations])
 
         # Combine the two lists, overriding results in the index with results
@@ -377,9 +432,13 @@ class PythonAutoImportCommand(sublime_plugin.TextCommand):
             locations = self.lookup_symbol(symbol)
 
         else:
-            symbol = self.view.substr(self.view.expand_by_class(pt,
-                sublime.CLASS_WORD_START | sublime.CLASS_WORD_END,
-                "[]{}()<>:."))
+            symbol = self.view.substr(
+                self.view.expand_by_class(
+                    pt,
+                    sublime.CLASS_WORD_START | sublime.CLASS_WORD_END,
+                    "[]{}()<>:.",
+                )
+            )
             locations = self.lookup_symbol(symbol)
 
             if len(locations) == 0:
@@ -395,23 +454,53 @@ class PythonAutoImportCommand(sublime_plugin.TextCommand):
                     "entry": locations[0],
                     "symbol": symbol,
                     "style": style,
-                }
+                },
             )
         else:
             self.view.window().show_quick_panel(
                 [self.format_location(l) for l in locations],
                 lambda x: self.select_entry(locations, x, symbol, style),
-                on_highlight = lambda x: self.highlight_entry(locations, x))
+                on_highlight=lambda x: self.highlight_entry(locations, x),
+            )
 
 
 if __name__ == '__main__':
-
-    assert build_import_statement('test', '/a/b/c/test.py') == "from a.b.c.test import test"
-    assert build_import_statement('test', '/a/b/c/test.py', 'a') == "from b.c.test import test"
-    assert build_import_statement('test', '/a/b/c/test.py', 'a/') == "from b.c.test import test"
-    assert build_import_statement('test', '/a/b/c/test.py', '/a') == "from b.c.test import test"
-    assert build_import_statement('test', '/a/b/c/test.py', '/a/') == "from b.c.test import test"
-    assert build_import_statement('test', '/a/b/c/__init__.py') == "from a.b.c import test"
-    assert build_import_statement('test', '/a/b/c.py') == "from a.b.c import test"
-    assert build_import_statement('test', '/a/b/c/test.py', style=ImportStyle.ABSOLUTE) == "import a.b.c.test.test"
-    assert build_import_statement('test', '/a/b/c/__init__.py', style=ImportStyle.ABSOLUTE) == "import a.b.c.test"
+    assert (
+        build_import_statement('test', '/a/b/c/test.py')
+        == "from a.b.c.test import test"
+    )
+    assert (
+        build_import_statement('test', '/a/b/c/test.py', 'a')
+        == "from b.c.test import test"
+    )
+    assert (
+        build_import_statement('test', '/a/b/c/test.py', 'a/')
+        == "from b.c.test import test"
+    )
+    assert (
+        build_import_statement('test', '/a/b/c/test.py', '/a')
+        == "from b.c.test import test"
+    )
+    assert (
+        build_import_statement('test', '/a/b/c/test.py', '/a/')
+        == "from b.c.test import test"
+    )
+    assert (
+        build_import_statement('test', '/a/b/c/__init__.py')
+        == "from a.b.c import test"
+    )
+    assert (
+        build_import_statement('test', '/a/b/c.py') == "from a.b.c import test"
+    )
+    assert (
+        build_import_statement(
+            'test', '/a/b/c/test.py', style=ImportStyle.ABSOLUTE
+        )
+        == "import a.b.c.test.test"
+    )
+    assert (
+        build_import_statement(
+            'test', '/a/b/c/__init__.py', style=ImportStyle.ABSOLUTE
+        )
+        == "import a.b.c.test"
+    )
